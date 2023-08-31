@@ -22,7 +22,7 @@
       <img loading="lazy" class="max-w-full" [src]="imgBlobUrl" />
     </ng-container>
     <ng-template #stream>
-      <ng-container *ngIf="model.responseType === 'stream' && model.responseLength > 500000; else longText">
+      <ng-container *ngIf="model.responseType === 'stream' && model.responseLength > 5000000; else longText">
         <div class="text-center">
           <span i18n>Unable to preview non-text type data, you can</span>
           <button type="button" (click)="downloadResponseText()" i18n="@@downloadResponse"> download response </button>
@@ -31,7 +31,7 @@
       </ng-container>
     </ng-template>
     <ng-template #longText>
-      <ng-container *ngIf="model.responseType === 'longText' && model.responseLength > 500000; else other">
+      <ng-container *ngIf="model.responseType === 'longText' && model.responseLength > 5000000; else other">
         <div class="text-center">
           <span i18n>The response result exceeds the previewable size, you can</span>
           <button i18n="@@downloadResponse" type="button" (click)="downloadResponseText()"> download response </button>

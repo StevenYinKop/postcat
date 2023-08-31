@@ -11,6 +11,7 @@ import {
 import { ContentTypeMap } from 'pc/browser/src/app/pages/workspace/project/api/http/test/api-test-ui.component';
 import { syncUrlAndQuery } from 'pc/browser/src/app/pages/workspace/project/api/utils/api.utils';
 import { parseCurl } from 'pc/browser/src/app/pages/workspace/project/api/utils/parse-curl.utils';
+import { parseJSONRequest } from 'pc/browser/src/app/pages/workspace/project/api/utils/parse-json-request.utils';
 import { ApiData, BodyParam, HeaderParam, RestParam } from 'pc/browser/src/app/services/storage/db/models/apiData';
 
 import { table2json, text2table, json2xml } from '../../../../../shared/utils/data-transfer/data-transfer.utils';
@@ -204,6 +205,58 @@ export class ApiTestUtilService {
       pcConsole.error(`parseCurl error: ${e}`);
       return [result, e.message];
     }
+    return this.assembleResult(result, requestObj);
+  }
+
+  getTestDataFromJSON(text: string, originModel: testViewModel): [testViewModel, string?] {
+    const result: testViewModel = eoDeepCopy(originModel);
+    let requestObj;
+    try {
+      requestObj = parseJSONRequest(text || '');
+      console.log('getTestDataFromJSON', requestObj);
+    } catch (e) {
+      pcConsole.error(`parseJSON error: ${e}`);
+      return [result, e.message];
+    }
+    return this.assembleResult(result, requestObj);
+  }
+
+  getContentType(headers = []) {
+    const existHeader = headers.find(val => val.name.toLowerCase() === 'content-type');
+    if (!existHeader) {
+      return;
+    }
+    return existHeader.paramAttr?.example;
+  }
+  /**
+   * @param type content-type be added/replaced
+   * @param headers
+   */
+  addOrReplaceContentType(contentType: ContentType | string, headers: HeaderParam[] | any = []) {
+    const existHeader = headers.find(val => val.name.toLowerCase() === 'content-type');
+    if (existHeader?.paramAttr && existHeader.disableEdit) {
+      existHeader.paramAttr.example = contentType;
+      return headers;
+    }
+    const result = [
+      {
+        isRequired: 1,
+        name: 'content-type',
+        paramAttr: {
+          example: contentType
+        },
+        disableEdit: true
+      },
+      ...headers
+    ];
+    return result;
+  }
+  private filterCommonHeader(headers = []) {
+    const result = headers.filter(val => !IGNORE_HEADERS.includes(val.name));
+    return result;
+  }
+
+  private assembleResult(result, requestObj): [testViewModel, string?] {
     result.request.uri = requestObj.url;
     //@ts-ignore
     result.request.apiAttrInfo.requestMethod = RequestMethod[requestObj.method];
@@ -270,7 +323,6 @@ export class ApiTestUtilService {
             const fIndex = Math.floor(index / 2);
             //FormName
             if (!formArr[fIndex]) {
-              debugger;
               const name = val.match(nameReg)[1];
               formArr[fIndex] = {
                 name: name,
@@ -295,39 +347,5 @@ export class ApiTestUtilService {
     }
     console.log('getTestDataFromCurl', result);
     return [result];
-  }
-  getContentType(headers = []) {
-    const existHeader = headers.find(val => val.name.toLowerCase() === 'content-type');
-    if (!existHeader) {
-      return;
-    }
-    return existHeader.paramAttr?.example;
-  }
-  /**
-   * @param type content-type be added/replaced
-   * @param headers
-   */
-  addOrReplaceContentType(contentType: ContentType | string, headers: HeaderParam[] | any = []) {
-    const existHeader = headers.find(val => val.name.toLowerCase() === 'content-type');
-    if (existHeader?.paramAttr && existHeader.disableEdit) {
-      existHeader.paramAttr.example = contentType;
-      return headers;
-    }
-    const result = [
-      {
-        isRequired: 1,
-        name: 'content-type',
-        paramAttr: {
-          example: contentType
-        },
-        disableEdit: true
-      },
-      ...headers
-    ];
-    return result;
-  }
-  private filterCommonHeader(headers = []) {
-    const result = headers.filter(val => !IGNORE_HEADERS.includes(val.name));
-    return result;
   }
 }

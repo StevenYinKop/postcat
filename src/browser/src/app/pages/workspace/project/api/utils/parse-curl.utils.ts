@@ -60,7 +60,8 @@ export const parseCurl = function (s) {
   } = { method: 'GET', url: '', header: {}, body: '' };
   let state = '';
 
-  args.forEach(function (arg) {
+  args.forEach(function (a: string) {
+    const arg = (a || '').trim();
     switch (true) {
       case isURL(arg):
         out.url = arg;

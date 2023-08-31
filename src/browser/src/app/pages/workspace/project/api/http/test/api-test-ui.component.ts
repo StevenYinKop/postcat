@@ -205,9 +205,9 @@ export class ApiTestUiComponent implements AfterViewInit, OnDestroy, OnChanges {
 
   ngOnChanges(changes) {
     if (!changes.model?.currentValue?.request?.apiAttrInfo) return;
-    // console.log('api-test-ui ngOnChanges', changes.model.currentValue);
+    console.log('api-test-ui ngOnChanges', changes.model.currentValue);
     this.initBasicForm();
-
+    console.log('api-test-ui ngOnChanges', changes.model.currentValue);
     //initHeader/contentType
     this.initialModelAuthType = this.model.request.authInfo?.authType;
   }
@@ -504,18 +504,11 @@ export class ApiTestUiComponent implements AfterViewInit, OnDestroy, OnChanges {
       //Import curl when uri match
       if (x?.uri?.trim().startsWith('curl')) {
         const [result, err] = this.apiTestUtil.getTestDataFromCurl(x.uri, this.model);
-        if (err) {
-          this.feedback.error($localize`Curl text error: ${err}`);
-          return;
-        }
-        this.model = result;
-        this.validateForm.patchValue({
-          uri: this.model.request.uri,
-          method: this.model.request.apiAttrInfo?.requestMethod
-        });
-        this.fixedHeaderAndContentType();
+        this.postProcess(result, err);
+      } else if (this.isJSON(x?.uri?.trim())) {
+        const [result, err] = this.apiTestUtil.getTestDataFromJSON(x.uri, this.model);
+        this.postProcess(result, err);
       }
-
       //? Settimeout for next loop, when triggle valueChanges, apiData actually isn't the newest data
       this.modelChange.emit(this.model);
     });
@@ -524,5 +517,27 @@ export class ApiTestUiComponent implements AfterViewInit, OnDestroy, OnChanges {
   closeInput() {
     this.inputToAI = false;
     this.model.request.uri = '';
+  }
+
+  private postProcess(result: testViewModel, err?: string) {
+    if (err) {
+      this.feedback.error($localize`Curl text error: ${err}`);
+      return;
+    }
+    this.model = result;
+    this.validateForm.patchValue({
+      uri: this.model.request.uri,
+      method: this.model.request.apiAttrInfo?.requestMethod
+    });
+    this.fixedHeaderAndContentType();
+  }
+
+  private isJSON(str: string): boolean {
+    try {
+      JSON.parse(str);
+    } catch (e) {
+      return false;
+    }
+    return true;
   }
 }
